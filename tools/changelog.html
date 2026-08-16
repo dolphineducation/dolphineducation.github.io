@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Changelog – Dolphin Education</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: Arial, sans-serif; background: #0b0f1a; color: #e6e6ff; }
+    .topbar {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 12px 20px;
+      background: linear-gradient(90deg, #3b3bff, #7a2cff);
+      box-shadow: 0 4px 20px rgba(122,44,255,0.3);
+    }
+    .topbar a { color: white; text-decoration: none; font-size: 14px; background: rgba(255,255,255,0.15); padding: 7px 12px; border-radius: 8px; }
+    .logo { font-size: 20px; font-weight: bold; color: white; }
+    .container { max-width: 800px; margin: 40px auto; padding: 0 20px; }
+    h1 { font-size: 28px; margin-bottom: 30px; color: #a78bfa; }
+    .entry {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(122,44,255,0.25);
+      border-radius: 14px;
+      padding: 20px 24px;
+      margin-bottom: 20px;
+      position: relative;
+    }
+    .entry:hover { border-color: rgba(122,44,255,0.5); }
+    .version { font-size: 20px; font-weight: bold; color: #818cf8; }
+    .date { font-size: 12px; opacity: 0.55; margin-top: 2px; margin-bottom: 14px; }
+    .tag {
+      display: inline-block; font-size: 11px; font-weight: bold; padding: 2px 8px;
+      border-radius: 6px; margin-right: 6px; margin-bottom: 6px;
+    }
+    .tag.new    { background: rgba(34,197,94,0.2);  color: #4ade80; border: 1px solid #4ade8055; }
+    .tag.fix    { background: rgba(251,191,36,0.2); color: #fbbf24; border: 1px solid #fbbf2455; }
+    .tag.remove { background: rgba(239,68,68,0.2);  color: #f87171; border: 1px solid #f8717155; }
+    .tag.update { background: rgba(99,102,241,0.2); color: #818cf8; border: 1px solid #818cf855; }
+    ul { margin: 10px 0 0; padding-left: 20px; line-height: 1.8; opacity: 0.85; }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="logo">🐬 Dolphin Education</div>
+  </div>
+  <div class="container">
+    <h1>📋 Changelog</h1>
+
+    <!-- PASTE NEW ENTRIES AT THE TOP -->
+
+    <!-- <div class="entry">
+      <div class="version">v1.3 – Proxy Update</div>
+      <div class="date">May 2026</div>
+      <span class="tag new">NEW</span>
+      <ul>
+        <li>Added Scramjet browser proxy (Browse tool)</li>
+        <li>Added backend for user data sync</li>
+        <li>Added this Changelog page</li>
+      </ul>
+    </div>
+
+    <div class="entry">
+      <div class="version">v1.2 – Shows & Movies</div>
+      <div class="date">April 2026</div>
+      <span class="tag new">NEW</span>
+      <span class="tag fix">FIX</span>
+      <ul>
+        <li>Added Family Guy, Invincible, Cyberpunk Edgerunners</li>
+        <li>Added Movies: FNAF, Titanic, Minecraft Movie, Mario Movie</li>
+        <li>Fixed episode selector not resetting on season change</li>
+      </ul>
+    </div>
+
+    <div class="entry">
+      <div class="version">v1.1 – More Games</div>
+      <div class="date">March 2026</div>
+      <span class="tag new">NEW</span>
+      <ul>
+        <li>Added ULTRAKILL Prelude, Balatro, Buckshot Roulette</li>
+        <li>Added Henry Stickmin: Breaking the Bank</li>
+        <li>Added search and category filter</li>
+      </ul>
+    </div> -->    
+
+    <div class="entry">
+      <div class="date">6/1/26</div>
+      <span class="tag new">NEW</span>
+      <span class="tag new">FIX</span>
+      <ul>
+        <li>Added Movie Hub and Show Hub</li>
+        <li>Made chatting a lot faster</li>
+        <li>Added VCs</li>
+      </ul>
+    </div>
+
+    <div class="entry">
+      <div class="date">5/26/26</div>
+      <span class="tag new">NEW</span>
+      <span class="tag new">FIX</span>
+      <ul>
+        <li>Added Yung Sheldon</li>
+        <li>Fixed likes, dislikes, PFPs, bios</li>
+        <li>Reduced chatting lag</li>
+        <li>Added a popup when you get a new message</li>
+        <li>Fixed many more bugs and added new features</li>
+      </ul>
+    </div>
+
+    <div class="entry">
+      <div class="date">5/25/26</div>
+      <span class="tag new">NEW</span>
+      <span class="tag update">UPDATE</span>
+      <span class="tag fix">FIX</span>
+      <ul>
+        <li>Added multiple chat features and a new overlay</li>
+        <li>Moved the top bar to a side bar</li>
+        <li>Added offline status</li>
+        <li>Added customizable bio, PFP, and username</li>
+        <li>Updated the homepage to look more like Roblox, with a dark Roblox-style color scheme and profile chips in the sidebar and top bar</li>
+        <li>Added a Roblox-style details menu when clicking games, movies, and shows, with play, favorite, like, and dislike controls</li>
+        <li>Added backend-synced favorites, likes, and dislikes for homepage content</li>
+        <li>Sorted homepage content by favorites first, then net likes, then alphabetically</li>
+        <li>Added like score and favorite indicators under each game, movie, and show card</li>
+        <li>Fixed friend and group click behavior so profile pictures open bios while the rest of a user row opens DMs</li>
+        <li>Fixed DM profile pictures so they render saved PFPs instead of only initials</li>
+        <li>Changed account prompts to default to the login screen instead of sign-up</li>
+        <li>Changed guest profile clicks to open the login screen</li>
+        <li>Fixed auth switch links so they stay inside the login modal</li>
+        <li>Updated login and global chat to the grayscale Roblox-style theme</li>
+        <li>Added logout to profile settings and improved saved PFP syncing</li>
+        <li>Added Global Chat to the mini friends list alongside friends and group chats</li>
+        <li>Removed the sidebar Chat shortcut and removed group chats from the full friends area</li>
+        <li>Changed file overlays to show only a Back button, keeping the full top overlay for shows</li>
+      </ul>
+    </div>
+
+    <div class="entry">
+      <div class="date">5/23/26</div>
+      <span class="tag new">NEW</span>
+      <span class="tag new">FIX</span>
+      <ul>
+        <li>Added Changelog</li>
+        <li>Added Minecraft, Geometry Dash, Celeste</li>
+        <li>Fixed Henry Stickmin</li>
+        <li>Added a chatting feature, with friends, DMs, group chats, and a global chat</li>
+        <li>Added Cyberpunk: Edgerunners, FMAB, The Boys, Breaking Bad, FNAF 2</li>
+        <li>Added a fullscreen feature (currently WIP)</li>
+        <li>Added maturity ratings for shows and movies</li>
+      </ul>
+    </div>
+
+
+  </div>
+</body>
+</html>
