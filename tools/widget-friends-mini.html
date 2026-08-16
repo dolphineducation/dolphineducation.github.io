@@ -187,7 +187,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
   function initial(name) { return (name||'?')[0].toUpperCase(); }
   function localProfile(username) {
     if (username !== me) return null;
-    return { username: me, pfp: localStorage.getItem('jmg_pfp') || '' };
+    return { username: me, pfp: localStorage.getItem('jmg_pfp') || '', role: localStorage.getItem('jmg_role') || 'user' };
   }
   async function fetchProfile(username) {
     if (!username) return { username, pfp: '' };
@@ -203,16 +203,22 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
       });
       if (r.ok) {
         const data = await r.json();
-        profileCache[username] = { username, pfp: data.pfp || data.avatar || data.avatarUrl || '' };
+        profileCache[username] = { username, pfp: data.pfp || data.avatar || data.avatarUrl || '', role: data.role || 'user' };
         return profileCache[username];
       }
     } catch {}
-    profileCache[username] = { username, pfp: '' };
+    profileCache[username] = { username, pfp: '', role: 'user' };
     return profileCache[username];
   }
   function avatarHtml(username) {
     const profile = profileCache[username] || localProfile(username) || {};
     return profile.pfp ? `<img src="${escAttr(profile.pfp)}" alt="">` : initial(username);
+  }
+  function roleBadgeHtml(username) {
+    const role = (profileCache[username] || localProfile(username) || {}).role;
+    if (role === 'owner') return ' <span style="color:#f5c842;font-weight:800;font-size:9px;">[OWNER]</span>';
+    if (role === 'mod') return ' <span style="color:#22d3a5;font-weight:800;font-size:9px;">[M]</span>';
+    return '';
   }
   function profileStatus(username) {
     const profile = profileCache[username] || {};
@@ -385,7 +391,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
           ${item.type === 'dm' ? `<span class="online-pip ${esc(item.statusClass || 'offline')}"></span>` : ''}
         </div>
         <div class="mf-info">
-          <div class="mf-name">${esc(item.name)}${item.type==='group'?` <span style="font-size:9px;color:var(--muted)">${item.members}p</span>`:''}</div>
+          <div class="mf-name">${esc(item.name)}${item.type==='dm'?roleBadgeHtml(item.name):''}${item.type==='group'?` <span style="font-size:9px;color:var(--muted)">${item.members}p</span>`:''}</div>
           <div class="mf-last ${item.unread?'unread':''}">${esc(item.lastText.slice(0,36)+(item.lastText.length>36?'...':''))}</div>
         </div>
         <div class="mf-meta">

@@ -997,11 +997,15 @@ body.has-active-overlay .toast-stack {
   const submitBtn = document.getElementById('authGateSubmit');
   let mode = 'login';
 
+  // NOTE: this must use the SAME localStorage key ('jmg_uid') as the
+  // page-wide getUserId() defined later in this file. Likes/saves/etc are
+  // all keyed off that id, so registration has to send the id that the
+  // rest of the app will keep using for this account.
   function genUserId() {
-    let id = localStorage.getItem('jmg_userid');
+    let id = localStorage.getItem('jmg_uid');
     if (!id) {
-      id = 'u_' + Math.random().toString(36).slice(2) + Date.now().toString(36);
-      localStorage.setItem('jmg_userid', id);
+      id = 'user_' + Math.random().toString(36).slice(2) + Date.now().toString(36);
+      localStorage.setItem('jmg_uid', id);
     }
     return id;
   }
@@ -1080,6 +1084,13 @@ body.has-active-overlay .toast-stack {
       localStorage.setItem('jmg_token', data.token);
       localStorage.setItem('jmg_username', data.username);
       localStorage.setItem('jmg_profile_username', data.username);
+      // Always sync jmg_uid to the account's real server-side userId (not
+      // whatever random device id happened to be sitting in localStorage).
+      // This is what makes likes/favorites/saves account-specific instead
+      // of device-specific, and self-heals anyone hitting this on a device
+      // that previously had a mismatched id.
+      if (data.userId) localStorage.setItem('jmg_uid', data.userId);
+      if (data.role) localStorage.setItem('jmg_role', data.role);
       location.reload();
     } catch {
       errorEl.textContent = 'Could not reach the server. Try again.';
@@ -1128,6 +1139,11 @@ body.has-active-overlay .toast-stack {
     <button onclick="openSidebarTool('file','tools/changelog.html')">Changelog</button>
     <button onclick="openSidebarTool('file','tools/discord-client.html')">Discord</button>
     <button onclick="openSidebarTool('file','tools/discord-bridge.html')">Server Chat</button>
+  </div>
+
+  <div class="sidebar-section" id="ownerToolsSection" style="display:none;">
+    <div class="sidebar-label">Owner</div>
+    <button id="manageLikesBtn" onclick="openAdminLikesModal()">Manage Likes</button>
   </div>
 </aside>
 
@@ -1611,6 +1627,41 @@ body.has-active-overlay .toast-stack {
   </div>
 </div>
 
+<div class="modal-backdrop" id="adminLikesModal" aria-hidden="true">
+  <div class="profile-modal">
+    <div class="profile-modal-header">
+      <h2>Manage Likes</h2>
+      <button class="modal-close" type="button" onclick="closeAdminLikesModal()" aria-label="Close manage likes">&times;</button>
+    </div>
+    <div class="profile-modal-body">
+      <label class="profile-field">
+        <span>
+          <input type="checkbox" id="adminLikesAllGames" onchange="onAdminLikesAllGamesToggle()" style="width:auto;margin-right:6px;">
+          Select all games
+        </span>
+      </label>
+      <label class="profile-field">
+        <span>Game</span>
+        <select id="adminLikesGameSelect"></select>
+      </label>
+      <div id="adminLikesCurrentStats" class="profile-sub" style="margin:-6px 0 4px;"></div>
+      <label class="profile-field">
+        <span>Set likes to</span>
+        <input id="adminLikesTargetLikes" type="number" min="0" step="1" value="0">
+      </label>
+      <label class="profile-field">
+        <span>Set dislikes to</span>
+        <input id="adminLikesTargetDislikes" type="number" min="0" step="1" value="0">
+      </label>
+      <div class="profile-actions">
+        <button class="danger" type="button" onclick="submitAdminResetLikes()">Reset to 0</button>
+        <button class="primary" type="button" id="adminLikesSetBtn" onclick="submitAdminSetLikes()">Set Exact Count</button>
+      </div>
+      <div class="profile-message" id="adminLikesMessage"></div>
+    </div>
+  </div>
+</div>
+
 <div class="toast-stack" id="jmgToastStack" aria-live="polite"></div>
 
 <div class="modal-backdrop" id="profileSettingsModal" aria-hidden="true">
@@ -1748,6 +1799,7 @@ const homepageFriendsStrip = document.getElementById("homepageFriendsStrip");
 const socialModal = document.getElementById("socialModal");
 const socialModalFrame = document.getElementById("socialModalFrame");
 const createGroupModal = document.getElementById("createGroupModal");
+const adminLikesModal = document.getElementById("adminLikesModal");
 const toastStack = document.getElementById("jmgToastStack");
 const activeToasts = new Map();
 const profileSettingsModal = document.getElementById("profileSettingsModal");
@@ -1841,6 +1893,9 @@ function storeProfileFields(profile) {
   if (pfp !== undefined) {
     localStorage.setItem("jmg_pfp", pfp || "");
   }
+  if (profile.role) {
+    localStorage.setItem("jmg_role", profile.role);
+  }
 
   return true;
 }
@@ -1858,6 +1913,7 @@ async function syncStoredProfileFromServer() {
     const profile = await response.json();
     if (storeProfileFields(profile)) {
       refreshTopUsername();
+      refreshAdminLikesVisibility();
       notifyChatFramesAuthChanged();
     }
   } catch {}
@@ -1902,8 +1958,9 @@ function renderProfileAvatar(target, username, pfp) {
 
 refreshTopUsername();
 window.addEventListener("storage", event => {
-  if (["jmg_token", "jmg_username", "jmg_profile_username", "jmg_bio", "jmg_pfp"].includes(event.key)) {
+  if (["jmg_token", "jmg_username", "jmg_profile_username", "jmg_bio", "jmg_pfp", "jmg_role"].includes(event.key)) {
     refreshTopUsername();
+    refreshAdminLikesVisibility();
     notifyChatFramesAuthChanged();
     if (event.key === "jmg_token" || event.key === "jmg_username") reloadFriendsFrames();
   }
@@ -2614,6 +2671,178 @@ async function createGroupFromHomepage() {
     reloadFriendsFrames();
     showToast("Group created", data.name || name);
     openHomeChat("group", data._id, data.name || name);
+  } catch {
+    message.textContent = "Something went wrong.";
+  }
+}
+
+// ================================================================
+// OWNER: MANAGE LIKES
+// Lets the owner set an exact like/dislike count for one game, or reset
+// one game / every game at once back to 0. Uses the same contentKey
+// scheme (getContentKey) as the rest of the site's like/dislike system.
+// ================================================================
+
+function refreshAdminLikesVisibility() {
+  const section = document.getElementById("ownerToolsSection");
+  if (!section) return;
+  const role = localStorage.getItem("jmg_role") || "";
+  section.style.display = role === "owner" ? "" : "none";
+}
+
+function getGameCards() {
+  return Array.from(cards).filter(card => card.dataset.category === "Games");
+}
+
+function populateAdminLikesGameOptions() {
+  const select = document.getElementById("adminLikesGameSelect");
+  const gameCards = getGameCards()
+    .map(card => ({ key: getContentKey(card), title: getCardTitle(card) }))
+    .sort((a, b) => a.title.localeCompare(b.title));
+
+  select.innerHTML = gameCards
+    .map(g => `<option value="${g.key.replace(/"/g, "&quot;")}">${g.title}</option>`)
+    .join("");
+}
+
+function updateAdminLikesCurrentStats() {
+  const allGames = document.getElementById("adminLikesAllGames").checked;
+  const el = document.getElementById("adminLikesCurrentStats");
+  if (allGames) {
+    el.textContent = `${getGameCards().length} game(s) selected`;
+    return;
+  }
+  const key = document.getElementById("adminLikesGameSelect").value;
+  const stats = contentStats[key] || { likes: 0, dislikes: 0 };
+  el.textContent = key ? `Current: ${stats.likes} like(s), ${stats.dislikes} dislike(s)` : "";
+}
+
+function onAdminLikesAllGamesToggle() {
+  const allGames = document.getElementById("adminLikesAllGames").checked;
+  const select = document.getElementById("adminLikesGameSelect");
+  const setBtn = document.getElementById("adminLikesSetBtn");
+  select.disabled = allGames;
+  // "Set an exact count" only makes sense for a single game — resetting
+  // every game to the same number isn't a supported use case.
+  setBtn.disabled = allGames;
+  setBtn.title = allGames ? "Uncheck \"Select all games\" to set an exact count" : "";
+  updateAdminLikesCurrentStats();
+}
+
+function openAdminLikesModal() {
+  const token = localStorage.getItem("jmg_token");
+  if (!token || (localStorage.getItem("jmg_role") || "") !== "owner") {
+    openLoginScreen();
+    return;
+  }
+  document.getElementById("adminLikesAllGames").checked = false;
+  populateAdminLikesGameOptions();
+  onAdminLikesAllGamesToggle();
+  document.getElementById("adminLikesTargetLikes").value = 0;
+  document.getElementById("adminLikesTargetDislikes").value = 0;
+  document.getElementById("adminLikesMessage").textContent = "";
+  document.getElementById("adminLikesGameSelect").onchange = updateAdminLikesCurrentStats;
+  adminLikesModal.classList.add("is-open");
+  adminLikesModal.setAttribute("aria-hidden", "false");
+}
+
+function closeAdminLikesModal() {
+  adminLikesModal.classList.remove("is-open");
+  adminLikesModal.setAttribute("aria-hidden", "true");
+}
+
+function applyAdminLikesResultLocally(key, stats) {
+  contentStats[key] = {
+    likes: Math.max(0, Number(stats?.likes) || 0),
+    dislikes: Math.max(0, Number(stats?.dislikes) || 0)
+  };
+  setLocalContentCache();
+  refreshContentOrdering();
+  updateContentDetailsUi();
+}
+
+async function submitAdminResetLikes() {
+  const token = localStorage.getItem("jmg_token");
+  const message = document.getElementById("adminLikesMessage");
+  message.textContent = "";
+  if (!token) { openLoginScreen(); return; }
+
+  const allGames = document.getElementById("adminLikesAllGames").checked;
+  const contentKeys = allGames
+    ? getGameCards().map(getContentKey)
+    : [document.getElementById("adminLikesGameSelect").value].filter(Boolean);
+
+  if (!contentKeys.length) {
+    message.textContent = "No game selected.";
+    return;
+  }
+
+  try {
+    const response = await fetch(`${BACKEND}/admin/content/likes/reset`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify({ contentKeys })
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      message.textContent = data.error || "Could not reset likes.";
+      return;
+    }
+    Object.entries(data.stats || {}).forEach(([key, stats]) => applyAdminLikesResultLocally(key, stats));
+    updateAdminLikesCurrentStats();
+    message.textContent = allGames
+      ? `Reset likes for ${contentKeys.length} game(s).`
+      : "Likes reset to 0.";
+  } catch {
+    message.textContent = "Something went wrong.";
+  }
+}
+
+async function submitAdminSetLikes() {
+  const token = localStorage.getItem("jmg_token");
+  const message = document.getElementById("adminLikesMessage");
+  message.textContent = "";
+  if (!token) { openLoginScreen(); return; }
+
+  const allGames = document.getElementById("adminLikesAllGames").checked;
+  if (allGames) {
+    message.textContent = "Uncheck \"Select all games\" to set an exact count.";
+    return;
+  }
+
+  const contentKey = document.getElementById("adminLikesGameSelect").value;
+  if (!contentKey) {
+    message.textContent = "No game selected.";
+    return;
+  }
+
+  const likes = Number(document.getElementById("adminLikesTargetLikes").value);
+  const dislikes = Number(document.getElementById("adminLikesTargetDislikes").value);
+  if (!Number.isFinite(likes) || likes < 0 || !Number.isFinite(dislikes) || dislikes < 0) {
+    message.textContent = "Likes and dislikes must be 0 or greater.";
+    return;
+  }
+
+  try {
+    const response = await fetch(`${BACKEND}/admin/content/likes/${encodeURIComponent(contentKey)}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify({ likes, dislikes })
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      message.textContent = data.error || "Could not set likes.";
+      return;
+    }
+    applyAdminLikesResultLocally(contentKey, data.stats);
+    updateAdminLikesCurrentStats();
+    message.textContent = "Likes updated.";
   } catch {
     message.textContent = "Something went wrong.";
   }

@@ -363,7 +363,7 @@ html.row-mode .fl-loading {
   function initial(name) { return (name||'?')[0].toUpperCase(); }
   function localProfile(username) {
     if (username !== me) return null;
-    return { username: me, pfp: localStorage.getItem('jmg_pfp') || '' };
+    return { username: me, pfp: localStorage.getItem('jmg_pfp') || '', role: localStorage.getItem('jmg_role') || 'user' };
   }
   async function fetchProfile(username) {
     if (!username) return { username, pfp: '' };
@@ -379,16 +379,22 @@ html.row-mode .fl-loading {
       });
       if (r.ok) {
         const data = await r.json();
-        profileCache[username] = { username, pfp: data.pfp || data.avatar || data.avatarUrl || '' };
+        profileCache[username] = { username, pfp: data.pfp || data.avatar || data.avatarUrl || '', role: data.role || 'user' };
         return profileCache[username];
       }
     } catch {}
-    profileCache[username] = { username, pfp: '' };
+    profileCache[username] = { username, pfp: '', role: 'user' };
     return profileCache[username];
   }
   function avatarHtml(username) {
     const profile = profileCache[username] || localProfile(username) || {};
     return profile.pfp ? `<img src="${escAttr(profile.pfp)}" alt="">` : initial(username);
+  }
+  function roleBadgeHtml(username) {
+    const role = (profileCache[username] || localProfile(username) || {}).role;
+    if (role === 'owner') return ' <span style="color:#f5c842;font-weight:800;font-size:10px;">[OWNER]</span>';
+    if (role === 'mod') return ' <span style="color:#22d3a5;font-weight:800;font-size:10px;">[M]</span>';
+    return '';
   }
   function normalizeFriend(friend) {
     if (typeof friend === 'string') {
@@ -474,7 +480,7 @@ html.row-mode .fl-loading {
             <div class="status-pip ${normalizeFriend(username).statusClass}"></div>
           </div>
           <div class="fl-card-info">
-            <div class="fl-card-name">${esc(username)}</div>
+            <div class="fl-card-name">${esc(username)}${roleBadgeHtml(username)}</div>
             <div class="fl-card-handle">@${esc(username)}</div>
             <div class="fl-card-status pending">Wants to be friends</div>
           </div>
@@ -495,7 +501,7 @@ html.row-mode .fl-loading {
             <div class="status-pip ${normalizeFriend(username).statusClass}"></div>
           </div>
           <div class="fl-card-info">
-            <div class="fl-card-name">${esc(username)}</div>
+            <div class="fl-card-name">${esc(username)}${roleBadgeHtml(username)}</div>
             <div class="fl-card-handle">@${esc(username)}</div>
             <div class="fl-card-status pending">Request sent</div>
           </div>
@@ -513,7 +519,7 @@ html.row-mode .fl-loading {
             <div class="status-pip ${friend.statusClass}"></div>
           </div>
           <div class="fl-card-info">
-            <div class="fl-card-name">${esc(friend.username)}</div>
+            <div class="fl-card-name">${esc(friend.username)}${roleBadgeHtml(friend.username)}</div>
             <div class="fl-card-handle">@${esc(friend.username)}</div>
             <div class="fl-card-status ${friend.statusClass}">${esc(friend.statusText)}</div>
           </div>

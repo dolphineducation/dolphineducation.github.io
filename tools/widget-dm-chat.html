@@ -291,7 +291,8 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
     if (username !== me) return null;
     return {
       username: me,
-      pfp: localStorage.getItem('jmg_pfp') || ''
+      pfp: localStorage.getItem('jmg_pfp') || '',
+      role: localStorage.getItem('jmg_role') || 'user'
     };
   }
 
@@ -313,13 +314,14 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
         const data = await r.json();
         profileCache[username] = {
           username,
-          pfp: data.pfp || data.avatar || data.avatarUrl || ''
+          pfp: data.pfp || data.avatar || data.avatarUrl || '',
+          role: data.role || 'user'
         };
         return profileCache[username];
       }
     } catch {}
 
-    profileCache[username] = { username, pfp: '' };
+    profileCache[username] = { username, pfp: '', role: 'user' };
     return profileCache[username];
   }
 
@@ -328,6 +330,13 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
     return profile.pfp
       ? `<img src="${escAttr(profile.pfp)}" alt="">`
       : initial(username);
+  }
+
+  function roleBadgeHtml(username) {
+    const role = (profileCache[username] || localProfile(username) || {}).role;
+    if (role === 'owner') return ' <span style="color:#f5c842;font-weight:800;font-size:11px;">[OWNER]</span>';
+    if (role === 'mod') return ' <span style="color:#22d3a5;font-weight:800;font-size:11px;">[M]</span>';
+    return '';
   }
 
   function renderAvatar(el, username) {
@@ -366,7 +375,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
     main.style.overflow = 'hidden';
     await fetchProfile(username);
     renderAvatar(document.getElementById('dm-hdr-av'), username);
-    document.getElementById('dm-hdr-name').textContent = username;
+    document.getElementById('dm-hdr-name').innerHTML = `${esc(username)}${roleBadgeHtml(username)}`;
     document.getElementById('dm-remove-btn').onclick   = () => removeFriend(username);
     loadMessages();
     pollTimer = setInterval(loadMessages, 1000);
@@ -418,7 +427,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
           <div class="dm-msg-av">${avatarHtml(sender)}</div>
           <div class="dm-msg-body">
             <div class="dm-msg-meta">
-              <span class="dm-msg-author">${esc(sender)}</span>
+              <span class="dm-msg-author">${esc(sender)}${roleBadgeHtml(sender)}</span>
               <span class="dm-msg-time">${fmtTime(msg.createdAt)}</span>
             </div>
             <div class="dm-msg-bubble">${esc(msg.text)}</div>

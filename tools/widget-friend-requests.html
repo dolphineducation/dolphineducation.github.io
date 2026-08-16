@@ -255,16 +255,22 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
       });
       if (r.ok) {
         const data = await r.json();
-        profileCache[username] = { username, pfp: data.pfp || data.avatar || data.avatarUrl || '' };
+        profileCache[username] = { username, pfp: data.pfp || data.avatar || data.avatarUrl || '', role: data.role || 'user' };
         return profileCache[username];
       }
     } catch {}
-    profileCache[username] = { username, pfp: '' };
+    profileCache[username] = { username, pfp: '', role: 'user' };
     return profileCache[username];
   }
   function avatarHtml(username) {
     const profile = profileCache[username] || {};
     return profile.pfp ? `<img src="${escAttr(profile.pfp)}" alt="">` : initial(username);
+  }
+  function roleBadgeHtml(username) {
+    const role = (profileCache[username] || {}).role;
+    if (role === 'owner') return ' <span style="color:#f5c842;font-weight:800;font-size:10px;">[OWNER]</span>';
+    if (role === 'mod') return ' <span style="color:#22d3a5;font-weight:800;font-size:10px;">[M]</span>';
+    return '';
   }
 
   function toast(msg, ok) {
@@ -315,7 +321,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
     grid.innerHTML = list.map(u => `
       <div class="fr-card incoming" id="fr-in-${esc(u)}">
         <div class="fr-avatar">${avatarHtml(u)}</div>
-        <div class="fr-name">${esc(u)}</div>
+        <div class="fr-name">${esc(u)}${roleBadgeHtml(u)}</div>
         <div class="fr-handle">@${esc(u)}</div>
         <div class="fr-actions">
           <button class="fr-btn ignore" onclick="respond('${esc(u)}','decline')">Ignore</button>
@@ -334,7 +340,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
     grid.innerHTML = list.map(u => `
       <div class="fr-card outgoing" id="fr-out-${esc(u)}">
         <div class="fr-avatar" style="color:var(--muted)">${avatarHtml(u)}</div>
-        <div class="fr-name">${esc(u)}</div>
+        <div class="fr-name">${esc(u)}${roleBadgeHtml(u)}</div>
         <div class="fr-sent-label">Request sent</div>
         <div class="fr-actions">
           <button class="fr-btn cancel" onclick="cancelRequest('${esc(u)}')">Cancel</button>
