@@ -81,21 +81,6 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
 .dm-btn-sm:hover { border-color: var(--red); color: var(--red); }
 .dm-btn-sm.call:hover { border-color: var(--green); color: var(--green); }
 
-/* First-conversation safety notice (like image 3) */
-.dm-safety-notice {
-  margin: 12px 16px;
-  padding: 14px 16px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  text-align: center;
-  font-size: 12px;
-  color: var(--muted);
-  line-height: 1.6;
-  flex-shrink: 0;
-}
-.dm-safety-notice strong { color: var(--text); display: block; margin-bottom: 4px; font-size: 13px; }
-
 .dm-messages {
   flex: 1;
   overflow-y: auto;
@@ -253,10 +238,6 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
         <button class="dm-btn-sm" id="dm-remove-btn">Remove Friend</button>
       </div>
     </div>
-    <div id="dm-safety" class="dm-safety-notice" style="display:none">
-      <strong id="dm-safety-title"></strong>
-      Your safety matters. Not feeling comfortable? You can block or report this person anytime from their profile.
-    </div>
     <div class="dm-messages" id="dm-messages"></div>
     <div class="dm-input-bar" id="dm-input-bar">
       <textarea id="dm-input" rows="1" placeholder="Message..." maxlength="500"></textarea>
@@ -397,17 +378,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
 
   function renderMessages(msgs) {
     const container = document.getElementById('dm-messages');
-    const safety    = document.getElementById('dm-safety');
     const wasAtBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 60;
-
-    // Show first-convo safety notice if no messages
-    if (msgs.length === 0) {
-      safety.style.display = 'block';
-      document.getElementById('dm-safety-title').textContent = `First conversation with ${currentTarget}`;
-      container.innerHTML = '<div class="dm-empty">Say hello!</div>';
-      return;
-    }
-    safety.style.display = 'none';
 
     let html = '';
     let lastDate = '';
