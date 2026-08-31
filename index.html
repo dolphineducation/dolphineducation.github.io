@@ -2291,9 +2291,9 @@ async function openGame(url) {
 
 /* GN GAMES — dynamically populate the Games grid from gn-math's catalog */
 async function loadGnGamesCards() {
-  const GN_ZONES_URL = "https://cdn.jsdelivr.net/gh/freebuisness/assets@main/zones.json";
-  const GN_COVER_URL = "https://cdn.jsdelivr.net/gh/freebuisness/covers@main/";
-  const GN_HTML_URL  = "https://cdn.jsdelivr.net/gh/freebuisness/html@main/";
+  const GN_ZONES_URL = "https://cdn.jsdelivr.net/gh/dolphineducation/gn-assets@main/zones.json";
+  const GN_COVER_URL = "https://cdn.jsdelivr.net/gh/dolphineducation/gn-covers@main/";
+  const GN_HTML_URL  = "https://cdn.jsdelivr.net/gh/dolphineducation/gn-html@main/";
 
   function gnResolve(u) {
     return (u + "").replace("{COVER_URL}", GN_COVER_URL).replace("{HTML_URL}", GN_HTML_URL);
