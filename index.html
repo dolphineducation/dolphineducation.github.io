@@ -1137,11 +1137,13 @@ body.has-active-overlay .toast-stack {
     <div class="sidebar-label">Tools</div>
     <button onclick="openSidebarTool('file','tools/widget-suggestions.html')">Suggestions</button>
     <button onclick="openSidebarTool('file','tools/changelog.html')">Changelog</button>
+    <button onclick="openBetaFeatures()">Beta Features</button>
   </div>
 
   <div class="sidebar-section" id="ownerToolsSection" style="display:none;">
     <div class="sidebar-label">Owner</div>
     <button id="manageLikesBtn" onclick="openAdminLikesModal()">Manage Likes</button>
+    <button onclick="openSidebarTool('file','tools/access-codes.html')">Access Codes</button>
   </div>
 </aside>
 
@@ -1409,6 +1411,27 @@ body.has-active-overlay .toast-stack {
         <button class="primary" type="button" id="adminLikesSetBtn" onclick="submitAdminSetLikes()">Set Exact Count</button>
       </div>
       <div class="profile-message" id="adminLikesMessage"></div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="betaAccessModal" aria-hidden="true">
+  <div class="profile-modal">
+    <div class="profile-modal-header">
+      <h2>Beta Features</h2>
+      <button class="modal-close" type="button" onclick="closeBetaAccessModal()" aria-label="Close beta access">&times;</button>
+    </div>
+    <div class="profile-modal-body">
+      <p class="profile-sub">Enter a one-time access code to authorize this device.</p>
+      <label class="profile-field">
+        <span>Access code</span>
+        <input id="betaAccessCodeInput" autocomplete="off" autocapitalize="characters" placeholder="BETA-XXXXX-XXXXX-XXXXX-XXXXX">
+      </label>
+      <div class="profile-actions">
+        <button type="button" onclick="closeBetaAccessModal()">Cancel</button>
+        <button class="primary" id="betaAccessSubmitBtn" type="button" onclick="submitBetaAccessCode()">Authorize device</button>
+      </div>
+      <div class="profile-message" id="betaAccessMessage"></div>
     </div>
   </div>
 </div>
@@ -2479,6 +2502,56 @@ function openSidebarTool(type, href) {
   showFrame.src = "";
   frame.src = href;
   setPresenceActivity(sidebarToolActivity(href));
+}
+
+function getBetaDeviceId() {
+  const key = 'jmg_beta_device_id';
+  let deviceId = localStorage.getItem(key);
+  if (!/^[a-f0-9-]{32,80}$/i.test(deviceId || '')) {
+    deviceId = crypto.randomUUID ? crypto.randomUUID() : Array.from(crypto.getRandomValues(new Uint8Array(16)), n => n.toString(16).padStart(2, '0')).join('');
+    localStorage.setItem(key, deviceId);
+  }
+  return deviceId;
+}
+
+async function openBetaFeatures() {
+  try {
+    const response = await fetch(`${BACKEND}/beta-access/status?deviceId=${encodeURIComponent(getBetaDeviceId())}`);
+    const data = await response.json();
+    if (response.ok && data.authorized) { openSidebarTool('file', 'tools/beta.html'); return; }
+  } catch {}
+  document.getElementById('betaAccessCodeInput').value = '';
+  document.getElementById('betaAccessMessage').textContent = '';
+  const modal = document.getElementById('betaAccessModal');
+  modal.classList.add('is-open');
+  modal.setAttribute('aria-hidden', 'false');
+  setTimeout(() => document.getElementById('betaAccessCodeInput')?.focus(), 0);
+}
+
+function closeBetaAccessModal() {
+  const modal = document.getElementById('betaAccessModal');
+  modal.classList.remove('is-open');
+  modal.setAttribute('aria-hidden', 'true');
+}
+
+async function submitBetaAccessCode() {
+  const code = document.getElementById('betaAccessCodeInput').value.trim();
+  const message = document.getElementById('betaAccessMessage');
+  const submit = document.getElementById('betaAccessSubmitBtn');
+  message.textContent = '';
+  if (!code) { message.textContent = 'Enter an access code.'; return; }
+  submit.disabled = true;
+  try {
+    const response = await fetch(`${BACKEND}/beta-access/redeem`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code, deviceId: getBetaDeviceId() })
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) { message.textContent = data.error || 'Could not authorize this device.'; return; }
+    closeBetaAccessModal();
+    openSidebarTool('file', 'tools/beta.html');
+  } catch { message.textContent = 'Could not reach the server. Try again.'; }
+  finally { submit.disabled = false; }
 }
 
 function openSocialModal(focus = "friends") {

@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Access Codes</title>
+<style>
+  :root { color-scheme: dark; --bg:#0b1622; --surface:#142b41; --border:#2b5270; --text:#eaf6fb; --muted:#8fbcd4; --accent:#38bdf8; --danger:#ef6461; }
+  * { box-sizing:border-box; } body { margin:0; min-height:100vh; padding:24px; background:var(--bg); color:var(--text); font:14px system-ui,sans-serif; }
+  main { max-width:900px; margin:auto; } h1 { margin:0 0 6px; font-size:22px; } .sub { margin:0 0 20px; color:var(--muted); }
+  button { border:1px solid var(--border); border-radius:7px; padding:9px 12px; color:var(--text); background:var(--surface); cursor:pointer; font-weight:700; } button:hover { border-color:var(--accent); } button.primary { background:#087cad; } button.danger { color:#ffd1d1; border-color:#913f45; } button:disabled { opacity:.6; cursor:wait; }
+  .new-code { display:none; margin:16px 0; padding:14px; border:1px solid var(--accent); border-radius:8px; background:#102d40; } code { display:block; margin-top:8px; color:#fff; font-size:17px; font-weight:800; letter-spacing:1px; user-select:all; }
+  .message { min-height:20px; margin:12px 0; color:#ffd1d1; } table { width:100%; border-collapse:collapse; background:#0f2032; border:1px solid var(--border); border-radius:8px; overflow:hidden; } th,td { padding:11px; text-align:left; border-bottom:1px solid #23445e; } th { color:var(--muted); font-size:12px; text-transform:uppercase; } .status { font-weight:700; } .active { color:#7ee787; } .used { color:#f5c842; } .revoked { color:#ff8c8c; } .empty { color:var(--muted); text-align:center; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Access Codes</h1>
+  <p class="sub">Create a one-time code for a device to open Beta Features. Codes are shown only when created.</p>
+  <button class="primary" id="createButton" type="button">Create access code</button>
+  <div class="new-code" id="newCode"><strong>New code — copy it now:</strong><code id="newCodeValue"></code></div>
+  <div class="message" id="message"></div>
+  <table><thead><tr><th>Created</th><th>State</th><th>Used</th><th>Action</th></tr></thead><tbody id="codeRows"><tr><td class="empty" colspan="4">Loading…</td></tr></tbody></table>
+</main>
+<script>
+  const BACKEND = 'https://dolphineducation-backend.onrender.com';
+  const token = localStorage.getItem('jmg_token');
+  const $ = id => document.getElementById(id);
+  const date = value => value ? new Date(value).toLocaleString() : '—';
+  const esc = value => String(value || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  function headers() { return { Authorization: `Bearer ${token}` }; }
+  function state(code) { return code.revokedAt ? ['Revoked','revoked'] : code.usedAt ? ['Used','used'] : ['Active','active']; }
+  async function loadCodes() {
+    if (!token || localStorage.getItem('jmg_role') !== 'owner') { $('message').textContent = 'Owner permissions required.'; $('codeRows').innerHTML = '<tr><td class="empty" colspan="4">You do not have access to this tool.</td></tr>'; return; }
+    try {
+      const response = await fetch(`${BACKEND}/admin/beta-access-codes`, { headers: headers() });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || 'Could not load access codes.');
+      $('codeRows').innerHTML = data.codes.length ? data.codes.map(code => {
+        const [label, cls] = state(code);
+        return `<tr><td>${date(code.createdAt)}</td><td class="status ${cls}">${label}</td><td>${code.usedAt ? date(code.usedAt) : '—'}</td><td>${code.revokedAt ? '—' : `<button class="danger" type="button" data-id="${esc(code.id)}">Revoke</button>`}</td></tr>`;
+      }).join('') : '<tr><td class="empty" colspan="4">No access codes yet.</td></tr>';
+    } catch (err) { $('message').textContent = err.message; }
+  }
+  $('createButton').addEventListener('click', async () => {
+    $('message').textContent = ''; $('createButton').disabled = true;
+    try {
+      const response = await fetch(`${BACKEND}/admin/beta-access-codes`, { method:'POST', headers:{ 'Content-Type':'application/json', ...headers() } });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || 'Could not create an access code.');
+      $('newCodeValue').textContent = data.code; $('newCode').style.display = 'block'; await loadCodes();
+    } catch (err) { $('message').textContent = err.message; } finally { $('createButton').disabled = false; }
+  });
+  $('codeRows').addEventListener('click', async event => {
+    const id = event.target.dataset.id; if (!id) return;
+    event.target.disabled = true; $('message').textContent = '';
+    try { const r = await fetch(`${BACKEND}/admin/beta-access-codes/${encodeURIComponent(id)}/revoke`, { method:'POST', headers:headers() }); const d = await r.json().catch(() => ({})); if (!r.ok) throw new Error(d.error || 'Could not revoke code.'); await loadCodes(); } catch (err) { $('message').textContent = err.message; event.target.disabled = false; }
+  });
+  loadCodes();
+</script>
+</body>
+</html>
