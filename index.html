@@ -1137,7 +1137,7 @@ body.has-active-overlay .toast-stack {
     <div class="sidebar-label">Tools</div>
     <button onclick="openSidebarTool('file','tools/widget-suggestions.html')">Suggestions</button>
     <button onclick="openSidebarTool('file','tools/changelog.html')">Changelog</button>
-    <button onclick="openBetaFeatures()">Beta Features</button>
+    <button onclick="openBetaFeatures()">Disable Securly</button>
   </div>
 
   <div class="sidebar-section" id="ownerToolsSection" style="display:none;">
@@ -1418,14 +1418,14 @@ body.has-active-overlay .toast-stack {
 <div class="modal-backdrop" id="betaAccessModal" aria-hidden="true">
   <div class="profile-modal">
     <div class="profile-modal-header">
-      <h2>Beta Features</h2>
-      <button class="modal-close" type="button" onclick="closeBetaAccessModal()" aria-label="Close beta access">&times;</button>
+      <h2>Disable Securly</h2>
+      <button class="modal-close" type="button" onclick="closeBetaAccessModal()" aria-label="Close Securly Disabler">&times;</button>
     </div>
     <div class="profile-modal-body">
       <p class="profile-sub">Enter a one-time access code to authorize this device.</p>
       <label class="profile-field">
         <span>Access code</span>
-        <input id="betaAccessCodeInput" autocomplete="off" autocapitalize="characters" placeholder="BETA-XXXXX-XXXXX-XXXXX-XXXXX">
+        <input id="betaAccessCodeInput" autocomplete="off" autocapitalize="characters" placeholder="CODE-XXXXX-XXXXX-XXXXX-XXXXX">
       </label>
       <div class="profile-actions">
         <button type="button" onclick="closeBetaAccessModal()">Cancel</button>
